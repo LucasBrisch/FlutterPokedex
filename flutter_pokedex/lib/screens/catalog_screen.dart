@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/pokemon.dart';
 import '../services/pokeapi_service.dart';
+import 'pokemon_details_screen.dart';
 
 class CatalogScreen extends StatefulWidget {
   const CatalogScreen({super.key});
@@ -64,32 +65,48 @@ class _CatalogScreenState extends State<CatalogScreen> {
                     itemBuilder: (context, index) {
                       final pokemon = _pokemonList[index];
 
-                      return Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Expanded(
-                                child: Image.network(
-                                  pokemon.imageUrl,
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return const Center(
-                                      child: Icon(
-                                        Icons.image_not_supported,
-                                        size: 48,
-                                      ),
-                                    );
-                                  },
+                      return InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => PokemonDetailsScreen(
+                                pokemon: pokemon,
+                              ),
+                            ),
+                          );
+                        },
+                        child: Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Expanded(
+                                  child: Image.network(
+                                    pokemon.imageUrl,
+                                    fit: BoxFit.contain,
+                                    errorBuilder: (
+                                      context,
+                                      error,
+                                      stackTrace,
+                                    ) {
+                                      return const Center(
+                                        child: Icon(
+                                          Icons.image_not_supported,
+                                          size: 48,
+                                        ),
+                                      );
+                                    },
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                pokemon.upperName,
-                                style: Theme.of(context).textTheme.titleMedium,
-                              ),
-                            ],
+                                const SizedBox(height: 8),
+                                Text(
+                                  pokemon.upperName,
+                                  style: Theme.of(context).textTheme.titleMedium,
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       );
