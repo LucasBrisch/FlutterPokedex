@@ -13,52 +13,108 @@ class CatalogScreen extends StatefulWidget {
 class _CatalogScreenState extends State<CatalogScreen> {
   final PokeApiService _pokeApiService = PokeApiService();
 
-  late Future<List<Pokemon>> _pokemonFuture;
+  List<Pokemon> _pokemonList = [];
+  int _offset = 0;
+  bool _isLoading = true;
+  bool _isLoadingMore = false;
 
   @override
   void initState() {
     super.initState();
+    _loadPokemon();
+  }
 
-    _pokemonFuture = _pokeApiService.getPokemonList();
+  Future<void> _loadPokemon() async {
+    try {
+      final pokemon = await _pokeApiService.getPokemonList(offset: _offset);
+
+      setState(() {
+        _pokemonList.addAll(pokemon);
+        _offset += pokemon.length;
+        _isLoading = false;
+        _isLoadingMore = false;
+      });
+    } catch (error) {
+      setState(() {
+        _isLoading = false;
+        _isLoadingMore = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Pokédex'),
-      ),
-      body: FutureBuilder<List<Pokemon>>(
-        future: _pokemonFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(), //Indicador de carregamento RF09
-            );
-          }
+      appBar: AppBar(title: const Text('Pokédex')),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                Expanded(
+                  child: GridView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _pokemonList.length,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                          childAspectRatio: 0.8,
+                        ),
+                    itemBuilder: (context, index) {
+                      final pokemon = _pokemonList[index];
 
-          if (snapshot.hasError) {
-            return Center(
-              child: Text(
-                'Não foi possível carregar os Pokémon.',
-              ),
-            );
-          }
+                      return Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Expanded(
+                                child: Image.network(
+                                  pokemon.imageUrl,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return const Center(
+                                      child: Icon(
+                                        Icons.image_not_supported,
+                                        size: 48,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                pokemon.upperName,
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: ElevatedButton(
+                    onPressed: _isLoadingMore
+                        ? null
+                        : () {
+                            setState(() {
+                              _isLoadingMore = true;
+                            });
 
-          final pokemonList = snapshot.data ?? [];
-
-          return ListView.builder(
-            itemCount: pokemonList.length,
-            itemBuilder: (context, index) {
-              final pokemon = pokemonList[index];
-
-              return ListTile(
-                title: Text(pokemon.name),
-              );
-            },
-          );
-        },
-      ),
+                            _loadPokemon();
+                          },
+                    child: _isLoadingMore
+                        ? const CircularProgressIndicator()
+                        : const Text('Carregar Mais'),
+                  ),
+                ),
+              ],
+            ),
     );
   }
 }
