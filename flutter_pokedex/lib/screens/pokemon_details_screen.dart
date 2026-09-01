@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import '../models/pokemon.dart';
 import '../models/pokemon_details.dart';
 import '../services/pokeapi_service.dart';
+import 'package:provider/provider.dart';
+
+import '../providers/favorite_provider.dart';
 
 class PokemonDetailsScreen extends StatefulWidget {
   final Pokemon pokemon;
@@ -35,6 +38,34 @@ class _PokemonDetailsScreenState extends State<PokemonDetailsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.pokemon.upperName),
+        actions: [
+          Consumer<FavoriteProvider>(
+            builder: (context, favoriteProvider, child) {
+              final isFavorite = favoriteProvider.isFavorite(
+                widget.pokemon,
+              );
+
+              return IconButton(
+                onPressed: () {
+                  if (isFavorite) {
+                    favoriteProvider.removeFavorite(
+                      widget.pokemon,
+                    );
+                  } else {
+                    favoriteProvider.addFavorite(
+                      widget.pokemon,
+                    );
+                  }
+                },
+                icon: Icon(
+                  isFavorite
+                      ? Icons.star
+                      : Icons.star_border,
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: FutureBuilder<PokemonDetails>(
         future: _pokemonDetailsFuture,
