@@ -5,10 +5,16 @@ import 'package:provider/provider.dart';
 
 import 'providers/favorite_provider.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final favoriteProvider = FavoriteProvider();
+
+  await favoriteProvider.loadFavorites();
+
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => FavoriteProvider(),
+    ChangeNotifierProvider.value(
+      value: favoriteProvider,
       child: const MyApp(),
     ),
   );
