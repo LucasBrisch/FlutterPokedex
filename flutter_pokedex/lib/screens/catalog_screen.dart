@@ -4,6 +4,7 @@ import '../models/pokemon.dart';
 import '../services/pokeapi_service.dart';
 import 'pokemon_details_screen.dart';
 import 'favorites_screen.dart';
+import 'captured_screen.dart';
 
 class CatalogScreen extends StatefulWidget {
   const CatalogScreen({super.key});
@@ -61,6 +62,18 @@ class _CatalogScreenState extends State<CatalogScreen> {
             },
             icon: const Icon(Icons.star),
             tooltip: 'Ver favoritos',
+          ),
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CapturedScreen(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.catching_pokemon),
+            tooltip: 'Ver Pokémon capturados',
           ),
         ],
       ),

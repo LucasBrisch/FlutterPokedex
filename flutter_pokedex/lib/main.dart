@@ -1,20 +1,28 @@
 import 'package:flutter/material.dart';
 import 'screens/catalog_screen.dart';
-import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
+import 'providers/captured_provider.dart';
 import 'providers/favorite_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final favoriteProvider = FavoriteProvider();
+  final capturedProvider = CapturedProvider();
 
   await favoriteProvider.loadFavorites();
+  await capturedProvider.loadCaptured();
 
   runApp(
-    ChangeNotifierProvider.value(
-      value: favoriteProvider,
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(
+          value: favoriteProvider,
+        ),
+        ChangeNotifierProvider.value(
+          value: capturedProvider,
+        ),
+      ],
       child: const MyApp(),
     ),
   );

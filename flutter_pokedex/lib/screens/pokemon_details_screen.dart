@@ -4,6 +4,7 @@ import '../models/pokemon.dart';
 import '../models/pokemon_details.dart';
 import '../services/pokeapi_service.dart';
 import 'package:provider/provider.dart';
+import '../providers/captured_provider.dart';
 
 import '../providers/favorite_provider.dart';
 
@@ -62,6 +63,39 @@ class _PokemonDetailsScreenState extends State<PokemonDetailsScreen> {
                       ? Icons.star
                       : Icons.star_border,
                 ),
+                tooltip: isFavorite
+                    ? 'Remover dos favoritos'
+                    : 'Adicionar aos favoritos',
+              );
+            },
+          ),
+
+          Consumer<CapturedProvider>(
+            builder: (context, capturedProvider, child) {
+              final isCaptured = capturedProvider.isCaptured(
+                widget.pokemon,
+              );
+
+              return IconButton(
+                onPressed: () {
+                  if (isCaptured) {
+                    capturedProvider.releasePokemon(
+                      widget.pokemon,
+                    );
+                  } else {
+                    capturedProvider.capturePokemon(
+                      widget.pokemon,
+                    );
+                  }
+                },
+                icon: Icon(
+                  isCaptured
+                      ? Icons.check_circle
+                      : Icons.catching_pokemon,
+                ),
+                tooltip: isCaptured
+                    ? 'Marcar como não capturado'
+                    : 'Marcar como capturado',
               );
             },
           ),
