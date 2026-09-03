@@ -1,72 +1,83 @@
-import '../models/pokemon.dart';
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/pokemon.dart';
 
 class FavoriteProvider extends ChangeNotifier {
-  static const String _favoritesKey = 'favorite_pokemon';
+  final SupabaseClient _supabase = Supabase.instance.client;
+
   final List<Pokemon> _favorites = [];
 
   List<Pokemon> get favorites => _favorites;
 
   Future<void> loadFavorites() async {
-    final preferences = await SharedPreferences.getInstance();
+    final user = _supabase.auth.currentUser;
 
-    final favoritesJson = preferences.getStringList(
-      _favoritesKey,
-    );
-
-    if (favoritesJson == null) {
+    if (user == null) {
+      _favorites.clear();
+      notifyListeners();
       return;
     }
 
+    final response = await _supabase
+        .from('favorites')
+        .select()
+        .eq('user_id', user.id);
+
     _favorites.clear();
 
-    for (final pokemonJson in favoritesJson) {
-      final data = jsonDecode(pokemonJson);
-
+    for (final favorite in response) {
       _favorites.add(
-        Pokemon.fromStorageJson(data),
+        Pokemon(
+          id: favorite['pokemon_id'] as int,
+          name: favorite['pokemon_name'] as String,
+          url: favorite['pokemon_url'] as String,
+        ),
       );
     }
 
     notifyListeners();
   }
 
-  Future<void> _saveFavorites() async {
-    final preferences = await SharedPreferences.getInstance();
-
-    final favoritesJson = _favorites
-        .map(
-          (pokemon) => jsonEncode(
-            pokemon.toJson(),
-          ),
-        )
-        .toList();
-
-    await preferences.setStringList(
-      _favoritesKey,
-      favoritesJson,
-    );
-  }
-
   Future<void> addFavorite(Pokemon pokemon) async {
-    _favorites.add(pokemon);
+    final user = _supabase.auth.currentUser;
 
-    await _saveFavorites();
+    if (user == null) {
+      return;
+    }
+
+    if (isFavorite(pokemon)) {
+      return;
+    }
+
+    await _supabase.from('favorites').insert({
+      'user_id': user.id,
+      'pokemon_id': pokemon.id,
+      'pokemon_name': pokemon.name,
+      'pokemon_url': pokemon.url,
+    });
+
+    _favorites.add(pokemon);
 
     notifyListeners();
   }
 
   Future<void> removeFavorite(Pokemon pokemon) async {
+    final user = _supabase.auth.currentUser;
+
+    if (user == null) {
+      return;
+    }
+
+    await _supabase
+        .from('favorites')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('pokemon_id', pokemon.id);
+
     _favorites.removeWhere(
       (favorite) => favorite.id == pokemon.id,
     );
-
-    await _saveFavorites();
 
     notifyListeners();
   }

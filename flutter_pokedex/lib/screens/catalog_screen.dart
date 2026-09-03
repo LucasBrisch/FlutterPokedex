@@ -5,6 +5,8 @@ import '../services/pokeapi_service.dart';
 import 'pokemon_details_screen.dart';
 import 'favorites_screen.dart';
 import 'captured_screen.dart';
+import '../providers/auth_provider.dart';
+import 'package:provider/provider.dart';
 
 class CatalogScreen extends StatefulWidget {
   const CatalogScreen({super.key});
@@ -74,6 +76,13 @@ class _CatalogScreenState extends State<CatalogScreen> {
             },
             icon: const Icon(Icons.catching_pokemon),
             tooltip: 'Ver Pokémon capturados',
+          ),
+          IconButton(
+            onPressed: () async {
+              await context.read<AuthProvider>().logout();
+            },
+            icon: const Icon(Icons.logout),
+            tooltip: 'Sair',
           ),
         ],
       ),
