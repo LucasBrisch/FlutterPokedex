@@ -6,6 +6,7 @@ import 'pokemon_details_screen.dart';
 import 'favorites_screen.dart';
 import 'captured_screen.dart';
 import '../providers/auth_provider.dart';
+
 import 'package:provider/provider.dart';
 
 class CatalogScreen extends StatefulWidget {
@@ -17,11 +18,13 @@ class CatalogScreen extends StatefulWidget {
 
 class _CatalogScreenState extends State<CatalogScreen> {
   final PokeApiService _pokeApiService = PokeApiService();
+  final TextEditingController _searchController = TextEditingController();
 
-  List<Pokemon> _pokemonList = [];
+  final List<Pokemon> _pokemonList = [];
   int _offset = 0;
   bool _isLoading = true;
   bool _isLoadingMore = false;
+  bool _isSearching = false;
 
   @override
   void initState() {
@@ -47,6 +50,63 @@ class _CatalogScreenState extends State<CatalogScreen> {
     }
   }
 
+  Future<void> _searchPokemon() async {
+    final query = _searchController.text.trim();
+
+    if (query.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Informe o nome ou número de um Pokémon.'),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isSearching = true;
+    });
+
+    try {
+      final pokemon = await _pokeApiService.searchPokemon(query);
+
+      if (!mounted) return;
+
+      if (pokemon == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Pokémon não encontrado.')),
+        );
+        return;
+      }
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PokemonDetailsScreen(pokemon: pokemon),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível buscar o Pokémon. Tente novamente.'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSearching = false;
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -69,9 +129,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const CapturedScreen(),
-                ),
+                MaterialPageRoute(builder: (context) => const CapturedScreen()),
               );
             },
             icon: const Icon(Icons.catching_pokemon),
@@ -86,12 +144,43 @@ class _CatalogScreenState extends State<CatalogScreen> {
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: Row(
               children: [
                 Expanded(
-                  child: GridView.builder(
+                  child: TextField(
+                    controller: _searchController,
+                    enabled: !_isSearching,
+                    textInputAction: TextInputAction.search,
+                    onSubmitted: (_) => _searchPokemon(),
+                    decoration: const InputDecoration(
+                      labelText: 'Buscar Pokémon',
+                      hintText: 'Nome ou número',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton(
+                  onPressed: _isSearching ? null : _searchPokemon,
+                  child: _isSearching
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Buscar'),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : GridView.builder(
                     padding: const EdgeInsets.all(16),
                     itemCount: _pokemonList.length,
                     gridDelegate:
@@ -109,9 +198,8 @@ class _CatalogScreenState extends State<CatalogScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => PokemonDetailsScreen(
-                                pokemon: pokemon,
-                              ),
+                              builder: (context) =>
+                                  PokemonDetailsScreen(pokemon: pokemon),
                             ),
                           );
                         },
@@ -125,11 +213,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                                   child: Image.network(
                                     pokemon.imageUrl,
                                     fit: BoxFit.contain,
-                                    errorBuilder: (
-                                      context,
-                                      error,
-                                      stackTrace,
-                                    ) {
+                                    errorBuilder: (context, error, stackTrace) {
                                       return const Center(
                                         child: Icon(
                                           Icons.image_not_supported,
@@ -142,7 +226,9 @@ class _CatalogScreenState extends State<CatalogScreen> {
                                 const SizedBox(height: 8),
                                 Text(
                                   pokemon.upperName,
-                                  style: Theme.of(context).textTheme.titleMedium,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium,
                                 ),
                               ],
                             ),
@@ -151,26 +237,27 @@ class _CatalogScreenState extends State<CatalogScreen> {
                       );
                     },
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: ElevatedButton(
-                    onPressed: _isLoadingMore
-                        ? null
-                        : () {
-                            setState(() {
-                              _isLoadingMore = true;
-                            });
+          ),
+          if (!_isLoading)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: ElevatedButton(
+                onPressed: _isLoadingMore
+                    ? null
+                    : () {
+                        setState(() {
+                          _isLoadingMore = true;
+                        });
 
-                            _loadPokemon();
-                          },
-                    child: _isLoadingMore
-                        ? const CircularProgressIndicator()
-                        : const Text('Carregar Mais'),
-                  ),
-                ),
-              ],
+                        _loadPokemon();
+                      },
+                child: _isLoadingMore
+                    ? const CircularProgressIndicator()
+                    : const Text('Carregar Mais'),
+              ),
             ),
+        ],
+      ),
     );
   }
 }
