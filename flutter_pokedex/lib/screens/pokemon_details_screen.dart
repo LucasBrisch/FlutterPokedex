@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../models/pokemon.dart';
 import '../models/pokemon_details.dart';
 import '../services/pokeapi_service.dart';
+
 import 'package:provider/provider.dart';
+
 import '../providers/captured_provider.dart';
 
 import '../providers/favorite_provider.dart';
@@ -24,6 +26,8 @@ class _PokemonDetailsScreenState extends State<PokemonDetailsScreen> {
   final PokeApiService _pokeApiService = PokeApiService();
 
   late Future<PokemonDetails> _pokemonDetailsFuture;
+  bool _isUpdatingFavorite = false;
+  bool _isUpdatingCaptured = false;
 
   @override
   void initState() {
@@ -32,6 +36,76 @@ class _PokemonDetailsScreenState extends State<PokemonDetailsScreen> {
     _pokemonDetailsFuture = _pokeApiService.getPokemonDetails(
       widget.pokemon.id,
     );
+  }
+
+  void _retryLoadDetails() {
+    setState(() {
+      _pokemonDetailsFuture = _pokeApiService.getPokemonDetails(
+        widget.pokemon.id,
+      );
+    });
+  }
+
+  Future<void> _toggleFavorite(
+    FavoriteProvider favoriteProvider,
+    bool isFavorite,
+  ) async {
+    setState(() {
+      _isUpdatingFavorite = true;
+    });
+
+    try {
+      if (isFavorite) {
+        await favoriteProvider.removeFavorite(widget.pokemon);
+      } else {
+        await favoriteProvider.addFavorite(widget.pokemon);
+      }
+    } catch (_) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível atualizar os favoritos.'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUpdatingFavorite = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _toggleCaptured(
+    CapturedProvider capturedProvider,
+    bool isCaptured,
+  ) async {
+    setState(() {
+      _isUpdatingCaptured = true;
+    });
+
+    try {
+      if (isCaptured) {
+        await capturedProvider.releasePokemon(widget.pokemon);
+      } else {
+        await capturedProvider.capturePokemon(widget.pokemon);
+      }
+    } catch (_) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível atualizar os Pokémon capturados.'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUpdatingCaptured = false;
+        });
+      }
+    }
   }
 
   @override
@@ -47,23 +121,19 @@ class _PokemonDetailsScreenState extends State<PokemonDetailsScreen> {
               );
 
               return IconButton(
-                onPressed: () {
-                  if (isFavorite) {
-                    favoriteProvider.removeFavorite(
-                      widget.pokemon,
-                    );
-                  } else {
-                    favoriteProvider.addFavorite(
-                      widget.pokemon,
-                    );
-                  }
-                },
-                icon: Icon(
-                  isFavorite
-                      ? Icons.star
-                      : Icons.star_border,
-                ),
-                tooltip: isFavorite
+                onPressed: _isUpdatingFavorite
+                    ? null
+                    : () => _toggleFavorite(favoriteProvider, isFavorite),
+                icon: _isUpdatingFavorite
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(isFavorite ? Icons.star : Icons.star_border),
+                tooltip: _isUpdatingFavorite
+                    ? 'Atualizando favoritos'
+                    : isFavorite
                     ? 'Remover dos favoritos'
                     : 'Adicionar aos favoritos',
               );
@@ -77,23 +147,23 @@ class _PokemonDetailsScreenState extends State<PokemonDetailsScreen> {
               );
 
               return IconButton(
-                onPressed: () {
-                  if (isCaptured) {
-                    capturedProvider.releasePokemon(
-                      widget.pokemon,
-                    );
-                  } else {
-                    capturedProvider.capturePokemon(
-                      widget.pokemon,
-                    );
-                  }
-                },
-                icon: Icon(
-                  isCaptured
-                      ? Icons.check_circle
-                      : Icons.catching_pokemon,
-                ),
-                tooltip: isCaptured
+                onPressed: _isUpdatingCaptured
+                    ? null
+                    : () => _toggleCaptured(capturedProvider, isCaptured),
+                icon: _isUpdatingCaptured
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(
+                        isCaptured
+                            ? Icons.check_circle
+                            : Icons.catching_pokemon,
+                      ),
+                tooltip: _isUpdatingCaptured
+                    ? 'Atualizando Pokémon capturados'
+                    : isCaptured
                     ? 'Marcar como não capturado'
                     : 'Marcar como capturado',
               );
@@ -111,9 +181,19 @@ class _PokemonDetailsScreenState extends State<PokemonDetailsScreen> {
           }
 
           if (snapshot.hasError) {
-            return const Center(
-              child: Text(
-                'Não foi possível carregar os detalhes do Pokémon.',
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Não foi possível carregar os detalhes do Pokémon.',
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _retryLoadDetails,
+                    child: const Text('Tentar novamente'),
+                  ),
+                ],
               ),
             );
           }

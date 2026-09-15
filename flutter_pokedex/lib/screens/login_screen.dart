@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../providers/favorite_provider.dart';
 import '../providers/captured_provider.dart';
 import '../providers/auth_provider.dart';
@@ -18,11 +19,22 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _loading = false;
 
   Future<void> _login() async {
+    if (_emailController.text.trim().isEmpty ||
+        _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Preencha e-mail e senha.')));
+      return;
+    }
+
+    final authProvider = context.read<AuthProvider>();
+    final favoriteProvider = context.read<FavoriteProvider>();
+    final capturedProvider = context.read<CapturedProvider>();
+    final messenger = ScaffoldMessenger.of(context);
+
     setState(() {
       _loading = true;
     });
-
-    final authProvider = context.read<AuthProvider>();
 
     final error = await authProvider.login(
       _emailController.text.trim(),
@@ -36,23 +48,35 @@ class _LoginScreenState extends State<LoginScreen> {
         _loading = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error),
-        ),
-      );
+      messenger.showSnackBar(SnackBar(content: Text(error)));
 
       return;
     }
 
-    await context.read<FavoriteProvider>().loadFavorites();
-    await context.read<CapturedProvider>().loadCaptured();
+    var synchronizationFailed = false;
+
+    try {
+      await favoriteProvider.loadFavorites();
+      await capturedProvider.loadCaptured();
+    } catch (_) {
+      synchronizationFailed = true;
+    }
 
     if (!mounted) return;
 
     setState(() {
       _loading = false;
     });
+
+    if (synchronizationFailed) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Login concluído, mas não foi possível sincronizar seus dados.',
+          ),
+        ),
+      );
+    }
 
     authProvider.notifyAuthChanged();
   }
