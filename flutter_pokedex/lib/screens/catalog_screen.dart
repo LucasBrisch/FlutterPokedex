@@ -25,6 +25,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
   bool _isLoading = true;
   bool _isLoadingMore = false;
   bool _isSearching = false;
+  String? _catalogError;
 
   @override
   void initState() {
@@ -33,21 +34,48 @@ class _CatalogScreenState extends State<CatalogScreen> {
   }
 
   Future<void> _loadPokemon() async {
+    final isInitialLoad = _pokemonList.isEmpty;
+
     try {
       final pokemon = await _pokeApiService.getPokemonList(offset: _offset);
+
+      if (!mounted) return;
 
       setState(() {
         _pokemonList.addAll(pokemon);
         _offset += pokemon.length;
         _isLoading = false;
         _isLoadingMore = false;
+        _catalogError = null;
       });
-    } catch (error) {
+    } catch (_) {
+      if (!mounted) return;
+
       setState(() {
         _isLoading = false;
         _isLoadingMore = false;
+        if (isInitialLoad) {
+          _catalogError = 'Não foi possível carregar o catálogo.';
+        }
       });
+
+      if (!isInitialLoad) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Não foi possível carregar mais Pokémon.'),
+          ),
+        );
+      }
     }
+  }
+
+  void _retryInitialLoad() {
+    setState(() {
+      _isLoading = true;
+      _catalogError = null;
+    });
+
+    _loadPokemon();
   }
 
   Future<void> _searchPokemon() async {
@@ -180,6 +208,23 @@ class _CatalogScreenState extends State<CatalogScreen> {
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
+                : _catalogError != null
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(_catalogError!, textAlign: TextAlign.center),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: _retryInitialLoad,
+                            child: const Text('Tentar novamente'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
                 : GridView.builder(
                     padding: const EdgeInsets.all(16),
                     itemCount: _pokemonList.length,
@@ -238,7 +283,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                     },
                   ),
           ),
-          if (!_isLoading)
+          if (!_isLoading && _catalogError == null)
             Padding(
               padding: const EdgeInsets.all(16),
               child: ElevatedButton(
