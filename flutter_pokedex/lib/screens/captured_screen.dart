@@ -34,36 +34,42 @@ class CapturedScreen extends StatelessWidget {
               itemBuilder: (context, index) {
                 final pokemon = captured[index];
 
-                return Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: Image.network(
-                            pokemon.imageUrl,
-                            fit: BoxFit.contain,
+                return Semantics(
+                  label: '${pokemon.upperName}, capturado',
+                  child: Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: Image.network(
+                              pokemon.imageUrl,
+                              semanticLabel: 'Imagem de ${pokemon.upperName}',
+                              fit: BoxFit.contain,
                             errorBuilder: (
                               context,
                               error,
                               stackTrace,
                             ) {
-                              return const Icon(
-                                Icons.image_not_supported,
-                                size: 48,
-                              );
-                            },
+                                return const Icon(
+                                  Icons.image_not_supported,
+                                  size: 48,
+                                  semanticLabel: 'Imagem indisponível',
+                                );
+                              },
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          pokemon.upperName,
-                          style: Theme.of(
-                            context,
-                          ).textTheme.titleMedium,
-                        ),
-                      ],
+                          const SizedBox(height: 8),
+                          Text(
+                            pokemon.upperName,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );

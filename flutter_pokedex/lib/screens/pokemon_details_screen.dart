@@ -125,10 +125,13 @@ class _PokemonDetailsScreenState extends State<PokemonDetailsScreen> {
                     ? null
                     : () => _toggleFavorite(favoriteProvider, isFavorite),
                 icon: _isUpdatingFavorite
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                    ? Semantics(
+                        label: 'Atualizando favoritos',
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
                       )
                     : Icon(isFavorite ? Icons.star : Icons.star_border),
                 tooltip: _isUpdatingFavorite
@@ -151,10 +154,13 @@ class _PokemonDetailsScreenState extends State<PokemonDetailsScreen> {
                     ? null
                     : () => _toggleCaptured(capturedProvider, isCaptured),
                 icon: _isUpdatingCaptured
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                    ? Semantics(
+                        label: 'Atualizando Pokémon capturados',
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
                       )
                     : Icon(
                         isCaptured
@@ -175,8 +181,11 @@ class _PokemonDetailsScreenState extends State<PokemonDetailsScreen> {
         future: _pokemonDetailsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
+            return Center(
+              child: Semantics(
+                label: 'Carregando detalhes do Pokémon',
+                child: CircularProgressIndicator(),
+              ),
             );
           }
 
@@ -215,6 +224,7 @@ class _PokemonDetailsScreenState extends State<PokemonDetailsScreen> {
                 Image.network(
                   pokemonDetails.imageUrl,
                   height: 250,
+                  semanticLabel: 'Imagem de ${pokemonDetails.upperName}',
                   errorBuilder: (context, error, stackTrace) {
                     return const SizedBox(
                       height: 250,
@@ -222,6 +232,7 @@ class _PokemonDetailsScreenState extends State<PokemonDetailsScreen> {
                         child: Icon(
                           Icons.image_not_supported,
                           size: 64,
+                          semanticLabel: 'Imagem indisponível',
                         ),
                       ),
                     );
@@ -262,23 +273,20 @@ class _PokemonDetailsScreenState extends State<PokemonDetailsScreen> {
   }
 
   Widget _buildDetail(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 110,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+    return Semantics(
+      label: '$label: $value',
+      child: ExcludeSemantics(
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Text(value),
+            ],
           ),
-          Expanded(
-            child: Text(value),
-          ),
-        ],
+        ),
       ),
     );
   }

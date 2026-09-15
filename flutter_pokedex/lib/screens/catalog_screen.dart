@@ -176,38 +176,48 @@ class _CatalogScreenState extends State<CatalogScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    enabled: !_isSearching,
-                    textInputAction: TextInputAction.search,
-                    onSubmitted: (_) => _searchPokemon(),
-                    decoration: const InputDecoration(
-                      labelText: 'Buscar Pokémon',
-                      hintText: 'Nome ou número',
-                      border: OutlineInputBorder(),
-                    ),
+                TextField(
+                  controller: _searchController,
+                  enabled: !_isSearching,
+                  textInputAction: TextInputAction.search,
+                  onSubmitted: (_) => _searchPokemon(),
+                  decoration: const InputDecoration(
+                    labelText: 'Buscar Pokémon',
+                    hintText: 'Nome ou número',
+                    border: OutlineInputBorder(),
                   ),
                 ),
-                const SizedBox(width: 12),
-                ElevatedButton(
-                  onPressed: _isSearching ? null : _searchPokemon,
-                  child: _isSearching
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Buscar'),
+                const SizedBox(height: 12),
+                SizedBox(
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: _isSearching ? null : _searchPokemon,
+                    child: _isSearching
+                        ? Semantics(
+                            label: 'Buscando Pokémon',
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          )
+                        : const Text('Buscar'),
+                  ),
                 ),
               ],
             ),
           ),
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? Center(
+                    child: Semantics(
+                      label: 'Carregando catálogo',
+                      child: CircularProgressIndicator(),
+                    ),
+                  )
                 : _catalogError != null
                 ? Center(
                     child: Padding(
@@ -238,44 +248,55 @@ class _CatalogScreenState extends State<CatalogScreen> {
                     itemBuilder: (context, index) {
                       final pokemon = _pokemonList[index];
 
-                      return InkWell(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  PokemonDetailsScreen(pokemon: pokemon),
-                            ),
-                          );
-                        },
-                        child: Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Expanded(
-                                  child: Image.network(
-                                    pokemon.imageUrl,
-                                    fit: BoxFit.contain,
+                      return Semantics(
+                        button: true,
+                        label: 'Ver detalhes de ${pokemon.upperName}',
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    PokemonDetailsScreen(pokemon: pokemon),
+                              ),
+                            );
+                          },
+                          child: Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Expanded(
+                                    child: Image.network(
+                                      pokemon.imageUrl,
+                                      semanticLabel:
+                                          'Imagem de ${pokemon.upperName}',
+                                      fit: BoxFit.contain,
                                     errorBuilder: (context, error, stackTrace) {
-                                      return const Center(
-                                        child: Icon(
-                                          Icons.image_not_supported,
-                                          size: 48,
-                                        ),
-                                      );
-                                    },
+                                            return const Center(
+                                              child: Icon(
+                                                Icons.image_not_supported,
+                                                size: 48,
+                                                semanticLabel:
+                                                    'Imagem indisponível',
+                                              ),
+                                            );
+                                          },
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  pokemon.upperName,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium,
-                                ),
-                              ],
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    pokemon.upperName,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.center,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium,
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
@@ -297,7 +318,10 @@ class _CatalogScreenState extends State<CatalogScreen> {
                         _loadPokemon();
                       },
                 child: _isLoadingMore
-                    ? const CircularProgressIndicator()
+                    ? Semantics(
+                        label: 'Carregando mais Pokémon',
+                        child: CircularProgressIndicator(),
+                      )
                     : const Text('Carregar Mais'),
               ),
             ),
