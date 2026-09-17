@@ -210,33 +210,31 @@ class _PokemonDetailsScreenState extends State<PokemonDetailsScreen> {
           final pokemonDetails = snapshot.data;
 
           if (pokemonDetails == null) {
-            return const Center(
-              child: Text(
-                'Nenhum detalhe encontrado.',
-              ),
-            );
+            return const Center(child: Text('Nenhum detalhe encontrado.'));
           }
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: Column(
               children: [
-                Image.network(
-                  pokemonDetails.imageUrl,
+                SizedBox(
+                  width: double.infinity,
                   height: 250,
-                  semanticLabel: 'Imagem de ${pokemonDetails.upperName}',
-                  errorBuilder: (context, error, stackTrace) {
-                    return const SizedBox(
-                      height: 250,
-                      child: Center(
+                  child: Image.network(
+                    pokemonDetails.imageUrl,
+                    alignment: Alignment.center,
+                    fit: BoxFit.contain,
+                    semanticLabel: 'Imagem de ${pokemonDetails.upperName}',
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Center(
                         child: Icon(
                           Icons.image_not_supported,
                           size: 64,
                           semanticLabel: 'Imagem indisponível',
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
                 const SizedBox(height: 24),
                 Text(
@@ -279,11 +277,15 @@ class _PokemonDetailsScreenState extends State<PokemonDetailsScreen> {
         child: Padding(
           padding: const EdgeInsets.only(bottom: 16),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 4),
-              Text(value),
+              Text(value, textAlign: TextAlign.center),
             ],
           ),
         ),
